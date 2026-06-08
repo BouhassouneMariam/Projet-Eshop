@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { CheckoutSteps } from "@/components/checkout-steps";
 import { formatPrice } from "@/lib/format";
 
 function SuccessContent() {
@@ -31,6 +32,8 @@ function SuccessContent() {
 
   return (
     <div className="page-stack section">
+      <CheckoutSteps current="success" />
+
       <div className="success-card">
         <span className="eyebrow">Confirmation</span>
         <h1>Commande validee.</h1>
@@ -57,6 +60,10 @@ function SuccessContent() {
           <div className="summary-line">
             <span>Livraison</span>
             <strong>{orderSummary?.shippingSpeed ?? "Standard"}</strong>
+          </div>
+          <div className="summary-line">
+            <span>Tentative</span>
+            <strong>{orderSummary?.attemptNumber ?? "-"}</strong>
           </div>
         </div>
 

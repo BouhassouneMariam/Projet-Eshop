@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { CheckoutSteps } from "@/components/checkout-steps";
 import { useCart } from "@/components/cart-provider";
-import { formatPrice } from "@/lib/format";
 import { trackEvent } from "@/lib/analytics";
+import { formatPrice } from "@/lib/format";
+import {
+  registerPaymentAttempt,
+  shouldSimulatePaymentFailure,
+  simulateGatewayFailure
+} from "@/lib/payment";
 
 function buildOrderId() {
   return `EH-${Math.floor(Math.random() * 900000 + 100000)}`;
-}
-
-function simulatePaymentFailure() {
-  return Math.random() < 1 / 3;
 }
 
 export default function CheckoutPage() {
@@ -29,15 +31,20 @@ export default function CheckoutPage() {
     paymentMethod: "card"
   });
   const [message, setMessage] = useState("");
+  const hasTrackedCheckoutStart = useRef(false);
 
   useEffect(() => {
-    if (items.length > 0) {
-      trackEvent("checkout_start", {
-        item_count: items.length,
-        cart_total: total
-      });
+    if (!isReady || items.length === 0 || hasTrackedCheckoutStart.current) {
+      return;
     }
-  }, [items.length, total]);
+
+    hasTrackedCheckoutStart.current = true;
+    trackEvent("checkout_start", {
+      item_count: items.length,
+      cart_total: total,
+      shipping_price: shipping
+    });
+  }, [isReady, items.length, shipping, total]);
 
   const shippingLabel = useMemo(() => {
     return formState.shippingSpeed === "express" ? "Express 24h" : "Standard 48h";
@@ -78,10 +85,20 @@ export default function CheckoutPage() {
       window.setTimeout(resolve, 1200);
     });
 
-    if (simulatePaymentFailure()) {
+    const attemptNumber = registerPaymentAttempt();
+
+    if (shouldSimulatePaymentFailure(attemptNumber)) {
+      simulateGatewayFailure({
+        attempt_number: attemptNumber,
+        cart_total: total,
+        item_count: items.length,
+        payment_method: formState.paymentMethod,
+        shipping_speed: formState.shippingSpeed
+      });
+
       setIsSubmitting(false);
       setMessage(
-        "Le paiement a echoue sur cette tentative. Ce comportement est volontaire pour preparer le futur scenario GlitchTip."
+        `La tentative #${attemptNumber} declenche volontairement une erreur technique non geree. C'est le scenario prevu pour les futurs tests GlitchTip.`
       );
       return;
     }
@@ -95,15 +112,19 @@ export default function CheckoutPage() {
           orderId,
           amount: total,
           itemCount: items.length,
-          shippingSpeed: shippingLabel
+          shippingSpeed: shippingLabel,
+          attemptNumber
         })
       );
     }
 
     trackEvent("checkout_success", {
       order_id: orderId,
+      attempt_number: attemptNumber,
       item_count: items.length,
-      cart_total: total
+      cart_total: total,
+      payment_method: formState.paymentMethod,
+      shipping_speed: formState.shippingSpeed
     });
 
     clearCart();
@@ -111,196 +132,209 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="page-stack section checkout-layout">
-      <div className="checkout-column">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">Checkout</span>
-            <h1>Finaliser la commande</h1>
-          </div>
-          <p className="section-copy">
-            Un formulaire volontairement simple pour garder un tunnel lisible,
-            facile a instrumenter et a tester plus tard avec de vrais evenements.
-          </p>
-        </div>
+    <div className="page-stack section">
+      <CheckoutSteps current="checkout" />
 
-        <form className="checkout-form" onSubmit={handleSubmit}>
-          <div className="form-grid">
-            <label className="field">
-              <span>Prenom</span>
-              <input
-                onChange={(event) =>
-                  setFormState((current) => ({ ...current, firstName: event.target.value }))
-                }
-                required
-                type="text"
-                value={formState.firstName}
-              />
-            </label>
-
-            <label className="field">
-              <span>Nom</span>
-              <input
-                onChange={(event) =>
-                  setFormState((current) => ({ ...current, lastName: event.target.value }))
-                }
-                required
-                type="text"
-                value={formState.lastName}
-              />
-            </label>
-
-            <label className="field field-full">
-              <span>Email</span>
-              <input
-                onChange={(event) =>
-                  setFormState((current) => ({ ...current, email: event.target.value }))
-                }
-                required
-                type="email"
-                value={formState.email}
-              />
-            </label>
-
-            <label className="field">
-              <span>Ville</span>
-              <input
-                onChange={(event) =>
-                  setFormState((current) => ({ ...current, city: event.target.value }))
-                }
-                required
-                type="text"
-                value={formState.city}
-              />
-            </label>
-
-            <label className="field">
-              <span>Code postal</span>
-              <input
-                onChange={(event) =>
-                  setFormState((current) => ({ ...current, postalCode: event.target.value }))
-                }
-                pattern="[0-9]{5}"
-                required
-                type="text"
-                value={formState.postalCode}
-              />
-            </label>
-          </div>
-
-          <div className="checkout-panels">
-            <fieldset className="option-card">
-              <legend>Livraison</legend>
-
-              <label className="option-row">
-                <input
-                  checked={formState.shippingSpeed === "standard"}
-                  name="shippingSpeed"
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      shippingSpeed: event.target.value
-                    }))
-                  }
-                  type="radio"
-                  value="standard"
-                />
-                <span>Standard 48h</span>
-              </label>
-
-              <label className="option-row">
-                <input
-                  checked={formState.shippingSpeed === "express"}
-                  name="shippingSpeed"
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      shippingSpeed: event.target.value
-                    }))
-                  }
-                  type="radio"
-                  value="express"
-                />
-                <span>Express 24h</span>
-              </label>
-            </fieldset>
-
-            <fieldset className="option-card">
-              <legend>Paiement</legend>
-
-              <label className="option-row">
-                <input
-                  checked={formState.paymentMethod === "card"}
-                  name="paymentMethod"
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      paymentMethod: event.target.value
-                    }))
-                  }
-                  type="radio"
-                  value="card"
-                />
-                <span>Carte bancaire</span>
-              </label>
-
-              <label className="option-row">
-                <input
-                  checked={formState.paymentMethod === "wire"}
-                  name="paymentMethod"
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      paymentMethod: event.target.value
-                    }))
-                  }
-                  type="radio"
-                  value="wire"
-                />
-                <span>Virement</span>
-              </label>
-            </fieldset>
-          </div>
-
-          {message ? <p className="status-message status-warning">{message}</p> : null}
-
-          <button className="button button-primary" disabled={isSubmitting} type="submit">
-            {isSubmitting ? "Validation en cours..." : "Payer ma commande"}
-          </button>
-        </form>
-      </div>
-
-      <aside className="summary-card">
-        <h2>Recapitulatif</h2>
-        <div className="stack-list compact-list">
-          {items.map((item) => (
-            <div className="summary-line" key={item.slug}>
-              <span>
-                {item.name} x {item.quantity}
-              </span>
-              <strong>{formatPrice(item.price * item.quantity)}</strong>
+      <div className="checkout-layout">
+        <div className="checkout-column">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Checkout</span>
+              <h1>Finaliser la commande</h1>
             </div>
-          ))}
+            <p className="section-copy">
+              Un formulaire volontairement simple pour garder un tunnel lisible,
+              facile a instrumenter et a tester plus tard avec de vrais evenements.
+            </p>
+          </div>
+
+          <div className="info-panel">
+            <strong>Scenario de panne deja pret</strong>
+            <p>
+              Chaque troisieme tentative de paiement declenche volontairement une
+              erreur JavaScript non geree, sans exposer de donnees personnelles,
+              pour pouvoir brancher GlitchTip proprement ensuite.
+            </p>
+          </div>
+
+          <form className="checkout-form" onSubmit={handleSubmit}>
+            <div className="form-grid">
+              <label className="field">
+                <span>Prenom</span>
+                <input
+                  onChange={(event) =>
+                    setFormState((current) => ({ ...current, firstName: event.target.value }))
+                  }
+                  required
+                  type="text"
+                  value={formState.firstName}
+                />
+              </label>
+
+              <label className="field">
+                <span>Nom</span>
+                <input
+                  onChange={(event) =>
+                    setFormState((current) => ({ ...current, lastName: event.target.value }))
+                  }
+                  required
+                  type="text"
+                  value={formState.lastName}
+                />
+              </label>
+
+              <label className="field field-full">
+                <span>Email</span>
+                <input
+                  onChange={(event) =>
+                    setFormState((current) => ({ ...current, email: event.target.value }))
+                  }
+                  required
+                  type="email"
+                  value={formState.email}
+                />
+              </label>
+
+              <label className="field">
+                <span>Ville</span>
+                <input
+                  onChange={(event) =>
+                    setFormState((current) => ({ ...current, city: event.target.value }))
+                  }
+                  required
+                  type="text"
+                  value={formState.city}
+                />
+              </label>
+
+              <label className="field">
+                <span>Code postal</span>
+                <input
+                  onChange={(event) =>
+                    setFormState((current) => ({ ...current, postalCode: event.target.value }))
+                  }
+                  pattern="[0-9]{5}"
+                  required
+                  type="text"
+                  value={formState.postalCode}
+                />
+              </label>
+            </div>
+
+            <div className="checkout-panels">
+              <fieldset className="option-card">
+                <legend>Livraison</legend>
+
+                <label className="option-row">
+                  <input
+                    checked={formState.shippingSpeed === "standard"}
+                    name="shippingSpeed"
+                    onChange={(event) =>
+                      setFormState((current) => ({
+                        ...current,
+                        shippingSpeed: event.target.value
+                      }))
+                    }
+                    type="radio"
+                    value="standard"
+                  />
+                  <span>Standard 48h</span>
+                </label>
+
+                <label className="option-row">
+                  <input
+                    checked={formState.shippingSpeed === "express"}
+                    name="shippingSpeed"
+                    onChange={(event) =>
+                      setFormState((current) => ({
+                        ...current,
+                        shippingSpeed: event.target.value
+                      }))
+                    }
+                    type="radio"
+                    value="express"
+                  />
+                  <span>Express 24h</span>
+                </label>
+              </fieldset>
+
+              <fieldset className="option-card">
+                <legend>Paiement</legend>
+
+                <label className="option-row">
+                  <input
+                    checked={formState.paymentMethod === "card"}
+                    name="paymentMethod"
+                    onChange={(event) =>
+                      setFormState((current) => ({
+                        ...current,
+                        paymentMethod: event.target.value
+                      }))
+                    }
+                    type="radio"
+                    value="card"
+                  />
+                  <span>Carte bancaire</span>
+                </label>
+
+                <label className="option-row">
+                  <input
+                    checked={formState.paymentMethod === "wire"}
+                    name="paymentMethod"
+                    onChange={(event) =>
+                      setFormState((current) => ({
+                        ...current,
+                        paymentMethod: event.target.value
+                      }))
+                    }
+                    type="radio"
+                    value="wire"
+                  />
+                  <span>Virement</span>
+                </label>
+              </fieldset>
+            </div>
+
+            {message ? <p className="status-message status-warning">{message}</p> : null}
+
+            <button className="button button-primary" disabled={isSubmitting} type="submit">
+              {isSubmitting ? "Validation en cours..." : "Payer ma commande"}
+            </button>
+          </form>
         </div>
-        <div className="summary-lines">
-          <div className="summary-line">
-            <span>Sous-total</span>
-            <strong>{formatPrice(subtotal)}</strong>
+
+        <aside className="summary-card">
+          <h2>Recapitulatif</h2>
+          <div className="stack-list compact-list">
+            {items.map((item) => (
+              <div className="summary-line" key={item.slug}>
+                <span>
+                  {item.name} x {item.quantity}
+                </span>
+                <strong>{formatPrice(item.price * item.quantity)}</strong>
+              </div>
+            ))}
           </div>
-          <div className="summary-line">
-            <span>Livraison</span>
-            <strong>{shipping === 0 ? "Offerte" : formatPrice(shipping)}</strong>
+          <div className="summary-lines">
+            <div className="summary-line">
+              <span>Sous-total</span>
+              <strong>{formatPrice(subtotal)}</strong>
+            </div>
+            <div className="summary-line">
+              <span>Livraison</span>
+              <strong>{shipping === 0 ? "Offerte" : formatPrice(shipping)}</strong>
+            </div>
+            <div className="summary-line">
+              <span>Delai</span>
+              <strong>{shippingLabel}</strong>
+            </div>
+            <div className="summary-line summary-total">
+              <span>Total</span>
+              <strong>{formatPrice(total)}</strong>
+            </div>
           </div>
-          <div className="summary-line">
-            <span>Mode livre</span>
-            <strong>{shippingLabel}</strong>
-          </div>
-          <div className="summary-line summary-total">
-            <span>Total</span>
-            <strong>{formatPrice(total)}</strong>
-          </div>
-        </div>
-      </aside>
+        </aside>
+      </div>
     </div>
   );
 }
