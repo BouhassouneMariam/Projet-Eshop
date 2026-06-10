@@ -1,0 +1,90 @@
+services:
+  web:
+    build:
+      context: .
+      target: runner
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_UMAMI_SCRIPT_URL: ${NEXT_PUBLIC_UMAMI_SCRIPT_URL}
+      NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+      NEXT_PUBLIC_GLITCHTIP_DSN: ${NEXT_PUBLIC_GLITCHTIP_DSN}
+    expose:
+      - "3000"
+    depends_on:
+      - umami
+      - glitchtip
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    volumes:
+      - ./infrastructure/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
+      - glitchtip
+      - umami
+
+  glitchtip:
+    image: glitchtip/glitchtip:latest
+    environment:
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY}
+      DATABASE_URL: postgres://${GLITCHTIP_POSTGRES_USER}:${GLITCHTIP_POSTGRES_PASSWORD}@glitchtip-postgres:5432/${GLITCHTIP_POSTGRES_DB}
+      VALKEY_URL: redis://glitchtip-redis:6379/0
+      EMAIL_URL: ${GLITCHTIP_EMAIL_URL}
+      DEFAULT_FROM_EMAIL: ${GLITCHTIP_DEFAULT_FROM_EMAIL}
+      GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN}
+      CSRF_TRUSTED_ORIGINS: ${GLITCHTIP_DOMAIN}
+      ENABLE_USER_REGISTRATION: ${GLITCHTIP_ENABLE_USER_REGISTRATION}
+      ENABLE_ORGANIZATION_CREATION: ${GLITCHTIP_ENABLE_ORGANIZATION_CREATION}
+      GLITCHTIP_EMBED_WORKER: "true"
+      PORT: "8000"
+    expose:
+      - "8000"
+    volumes:
+      - glitchtip_uploads:/code/uploads
+    depends_on:
+      - glitchtip-postgres
+      - glitchtip-redis
+
+  glitchtip-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${GLITCHTIP_POSTGRES_DB}
+      POSTGRES_USER: ${GLITCHTIP_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${GLITCHTIP_POSTGRES_PASSWORD}
+    volumes:
+      - glitchtip_postgres_data:/var/lib/postgresql/data
+
+  glitchtip-redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - glitchtip_redis_data:/data
+
+  umami:
+    image: docker.umami.is/umami-software/umami:postgresql-latest
+    environment:
+      DATABASE_URL: postgresql://${UMAMI_POSTGRES_USER}:${UMAMI_POSTGRES_PASSWORD}@umami-postgres:5432/${UMAMI_POSTGRES_DB}
+      DATABASE_TYPE: postgresql
+      APP_SECRET: ${UMAMI_APP_SECRET}
+      DISABLE_TELEMETRY: "1"
+    expose:
+      - "3000"
+    depends_on:
+      - umami-postgres
+
+  umami-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${UMAMI_POSTGRES_DB}
+      POSTGRES_USER: ${UMAMI_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${UMAMI_POSTGRES_PASSWORD}
+    volumes:
+      - umami_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  glitchtip_postgres_data:
+  glitchtip_redis_data:
+  glitchtip_uploads:
+  umami_postgres_data:
