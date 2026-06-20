@@ -5,6 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { CheckoutSteps } from "@/components/checkout-steps";
 import { formatPrice } from "@/lib/format";
+import { trackEvent } from "@/lib/analytics";
+
+const TRACKED_SUCCESS_KEY = "eco-hardware:tracked-success-order";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -27,6 +30,29 @@ function SuccessContent() {
       setOrderSummary(null);
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !orderSummary?.orderId) {
+      return;
+    }
+
+    const alreadyTrackedOrder = window.sessionStorage.getItem(TRACKED_SUCCESS_KEY);
+
+    if (alreadyTrackedOrder === orderSummary.orderId) {
+      return;
+    }
+
+    trackEvent("checkout_success", {
+      order_id: orderSummary.orderId,
+      attempt_number: orderSummary.attemptNumber,
+      item_count: orderSummary.itemCount,
+      cart_total: orderSummary.amount,
+      payment_method: orderSummary.paymentMethod,
+      shipping_speed: orderSummary.shippingSpeedCode
+    });
+
+    window.sessionStorage.setItem(TRACKED_SUCCESS_KEY, orderSummary.orderId);
+  }, [orderSummary]);
 
   const orderId = searchParams.get("order") || orderSummary?.orderId || "EH-XXXXXX";
 

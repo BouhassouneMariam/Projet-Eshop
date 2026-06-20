@@ -113,19 +113,12 @@ export default function CheckoutPage() {
           amount: total,
           itemCount: items.length,
           shippingSpeed: shippingLabel,
+          shippingSpeedCode: formState.shippingSpeed,
+          paymentMethod: formState.paymentMethod,
           attemptNumber
         })
       );
     }
-
-    trackEvent("checkout_success", {
-      order_id: orderId,
-      attempt_number: attemptNumber,
-      item_count: items.length,
-      cart_total: total,
-      payment_method: formState.paymentMethod,
-      shipping_speed: formState.shippingSpeed
-    });
 
     clearCart();
     router.push(`/checkout/success?order=${orderId}`);
