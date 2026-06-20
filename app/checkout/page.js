@@ -7,6 +7,7 @@ import { CheckoutSteps } from "@/components/checkout-steps";
 import { useCart } from "@/components/cart-provider";
 import { trackEvent } from "@/lib/analytics";
 import { formatPrice } from "@/lib/format";
+import { endAfterNextPaint, startPageReadyTracker } from "@/lib/performance";
 import {
   registerPaymentAttempt,
   shouldSimulatePaymentFailure,
@@ -32,6 +33,22 @@ export default function CheckoutPage() {
   });
   const [message, setMessage] = useState("");
   const hasTrackedCheckoutStart = useRef(false);
+  const checkoutReadySpanRef = useRef(null);
+
+  useEffect(() => {
+    if (checkoutReadySpanRef.current) {
+      return;
+    }
+
+    checkoutReadySpanRef.current = startPageReadyTracker("checkout.page_ready", {
+      "app.route": "/checkout"
+    });
+
+    return () => {
+      checkoutReadySpanRef.current?.();
+      checkoutReadySpanRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isReady || items.length === 0 || hasTrackedCheckoutStart.current) {
@@ -45,6 +62,16 @@ export default function CheckoutPage() {
       shipping_price: shipping
     });
   }, [isReady, items.length, shipping, total]);
+
+  useEffect(() => {
+    if (!isReady || !checkoutReadySpanRef.current) {
+      return;
+    }
+
+    const endSpan = checkoutReadySpanRef.current;
+    checkoutReadySpanRef.current = null;
+    endAfterNextPaint(endSpan);
+  }, [isReady]);
 
   const shippingLabel = useMemo(() => {
     return formState.shippingSpeed === "express" ? "Express 24h" : "Standard 48h";

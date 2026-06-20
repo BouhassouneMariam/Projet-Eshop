@@ -2,16 +2,33 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { CheckoutSteps } from "@/components/checkout-steps";
 import { formatPrice } from "@/lib/format";
 import { trackEvent } from "@/lib/analytics";
+import { endAfterNextPaint, startPageReadyTracker } from "@/lib/performance";
 
 const TRACKED_SUCCESS_KEY = "eco-hardware:tracked-success-order";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const [orderSummary, setOrderSummary] = useState(null);
+  const confirmationReadySpanRef = useRef(null);
+
+  useEffect(() => {
+    if (confirmationReadySpanRef.current) {
+      return;
+    }
+
+    confirmationReadySpanRef.current = startPageReadyTracker("checkout.confirmation_ready", {
+      "app.route": "/checkout/success"
+    });
+
+    return () => {
+      confirmationReadySpanRef.current?.();
+      confirmationReadySpanRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -30,6 +47,8 @@ function SuccessContent() {
       setOrderSummary(null);
     }
   }, []);
+
+  const orderId = searchParams.get("order") || orderSummary?.orderId || "EH-XXXXXX";
 
   useEffect(() => {
     if (typeof window === "undefined" || !orderSummary?.orderId) {
@@ -54,7 +73,19 @@ function SuccessContent() {
     window.sessionStorage.setItem(TRACKED_SUCCESS_KEY, orderSummary.orderId);
   }, [orderSummary]);
 
-  const orderId = searchParams.get("order") || orderSummary?.orderId || "EH-XXXXXX";
+  useEffect(() => {
+    if (!confirmationReadySpanRef.current) {
+      return;
+    }
+
+    if (!orderSummary && orderId === "EH-XXXXXX") {
+      return;
+    }
+
+    const endSpan = confirmationReadySpanRef.current;
+    confirmationReadySpanRef.current = null;
+    endAfterNextPaint(endSpan);
+  }, [orderId, orderSummary]);
 
   return (
     <div className="page-stack section">
