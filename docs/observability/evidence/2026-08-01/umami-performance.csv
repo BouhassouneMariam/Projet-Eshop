@@ -1,0 +1,2 @@
+path,cls,fcp_ms,inp_ms,lcp_ms,ttfb_ms,browser,os
+/checkout/success,0.0200,410,72,690,95,chrome,Windows 10

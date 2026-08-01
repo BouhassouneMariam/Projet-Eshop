@@ -1,0 +1,4 @@
+scenario,browser,os,sessions,tagged_records
+complete,chrome,Windows 10,1,9
+cart_abandonment,firefox,Linux,1,5
+checkout_abandonment,safari,Mac OS,1,7
