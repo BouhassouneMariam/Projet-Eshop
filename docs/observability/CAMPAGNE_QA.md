@@ -53,11 +53,15 @@ Dans GlitchTip (`http://glitchtip.localhost:8080`) :
 3. Verifier la stacktrace, les trois breadcrumbs, Safari 18.6 et macOS 15.6.
 4. Ouvrir Performance et verifier `checkout.page_ready` et `checkout.confirmation_ready`.
 
-## Captures attendues
+## Captures realisees
 
-- Dashboard Umami avec les evenements.
-- Funnel Umami `Tunnel d'achat`.
-- Incident GlitchTip avec stacktrace et contexte.
-- Vue Performance GlitchTip avec les deux transactions.
+Les preuves sont versionnees dans `evidence/2026-08-01` :
 
-Masquer tout identifiant sensible avant de partager les captures.
+1. [Evenements Umami](evidence/2026-08-01/01-umami-events-global.PNG)
+2. [Funnel Umami `Tunnel d'achat`](evidence/2026-08-01/02-umami-funnel.PNG)
+3. [Web Vitals Umami](evidence/2026-08-01/03-umami-performance.PNG)
+4. [Erreur et contexte GlitchTip](evidence/2026-08-01/04-glitchtip-error-context.PNG)
+5. [Stacktrace et breadcrumbs GlitchTip](evidence/2026-08-01/05-glitchtip-stacktrace-breadcrumbs.PNG)
+6. [Transactions de performance GlitchTip](evidence/2026-08-01/06-glitchtip-performance.PNG)
+
+La premiere capture regroupe plusieurs essais techniques. Les taux officiels sont ceux du funnel isole dans la deuxieme capture. Masquer tout identifiant sensible avant de partager de nouvelles captures.

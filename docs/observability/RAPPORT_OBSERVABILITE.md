@@ -54,11 +54,24 @@ GlitchTip apporte la vision technique : exception, stacktrace, breadcrumbs, cont
 
 Les deux outils sont complementaires. Umami detecte une baisse de conversion ; GlitchTip aide ensuite a relier cette baisse a une erreur ou une degradation de performance.
 
+## Preuves visuelles
+
+| Preuve | Capture |
+| --- | --- |
+| Evenements Umami | [Vue globale](evidence/2026-08-01/01-umami-events-global.PNG) |
+| Funnel de reference | [Tunnel d'achat](evidence/2026-08-01/02-umami-funnel.PNG) |
+| Web Vitals Umami | [Performance Umami](evidence/2026-08-01/03-umami-performance.PNG) |
+| Erreur et contexte | [Incident GlitchTip](evidence/2026-08-01/04-glitchtip-error-context.PNG) |
+| Stacktrace et breadcrumbs | [Diagnostic GlitchTip](evidence/2026-08-01/05-glitchtip-stacktrace-breadcrumbs.PNG) |
+| Transactions applicatives | [Performance GlitchTip](evidence/2026-08-01/06-glitchtip-performance.PNG) |
+
+La vue globale Umami regroupe plusieurs essais de mise au point. Les calculs de conversion reposent uniquement sur le funnel de reference `3 -> 3 -> 2 -> 1`.
+
 ## Conclusion et suites
 
 L'instrumentation attendue est operationnelle et la campagne couvre les trois parcours demandes sur trois user-agents differents. Le funnel sauvegarde `Tunnel d'achat` isole la campagne entre 14:37:50 et 14:40:00 UTC.
 
-Avant la soutenance, il reste a realiser les quatre captures d'interface listees dans `CAMPAGNE_QA.md`, puis a rejouer au moins une campagne dans de vrais navigateurs pour confirmer l'affichage et le comportement de bout en bout.
+Les six captures d'interface sont versionnees avec les exports dans `evidence/2026-08-01`. Pour completer la demonstration le jour de la soutenance, il est recommande de rejouer au moins un parcours dans un vrai navigateur afin de confirmer le comportement de bout en bout.
 
 ## Sources des seuils
 

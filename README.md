@@ -9,6 +9,12 @@ L'objectif est de pouvoir :
 - capturer les erreurs frontend et les informations de debug dans GlitchTip
 - faire tourner toute la stack localement avec Docker Compose
 
+## Dossier de rendu observabilite
+
+- [Rapport d'observabilite](docs/observability/RAPPORT_OBSERVABILITE.md)
+- [Procedure de campagne QA](docs/observability/CAMPAGNE_QA.md)
+- [Preuves du 1er aout 2026](docs/observability/evidence/2026-08-01/README.md)
+
 ## Stack technique
 
 - Next.js 14
