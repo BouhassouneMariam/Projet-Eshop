@@ -1,0 +1,3 @@
+transaction,operation,samples,average_ms,p95_ms
+checkout.confirmation_ready,ui.load,3,310.000,342.802
+checkout.page_ready,ui.load,3,420.000,427.176

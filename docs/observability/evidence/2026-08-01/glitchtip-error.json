@@ -1,0 +1,26 @@
+{
+  "event_id": "5569dcc2d95826369258d998aae415c1",
+  "issue_short_id": 2,
+  "issue_occurrences": 3,
+  "title": "CheckoutPaymentError: Cannot read properties of undefined (reading 'authorize')",
+  "environment": "qa-local",
+  "release": "eco-hardware@0.1.0",
+  "browser": "Safari 18.6",
+  "os": "macOS 15.6",
+  "device": "Mac",
+  "tags": {
+    "qa_run": "qa-observability-final2-20260801",
+    "qa_scenario": "checkout_abandonment",
+    "payment_attempt": "3"
+  },
+  "breadcrumbs": [
+    "navigation: /cart -> /checkout",
+    "ui.click: button.button.button-primary",
+    "checkout: Payment attempt 3 started"
+  ],
+  "stacktrace": [
+    "CheckoutPage.handleSubmit (app:///app/checkout/page.js:118:7)",
+    "simulateGatewayFailure (app:///lib/payment.js:40:17)"
+  ],
+  "error_code": "PAYMENT_PROVIDER_UNAVAILABLE"
+}

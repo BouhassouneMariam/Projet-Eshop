@@ -1,0 +1,5 @@
+step,visitors,conversion_from_previous_percent,drop_from_previous_percent
+view_product,3,100.0,0.0
+add_to_cart,3,100.0,0.0
+checkout_start,2,66.7,33.3
+checkout_success,1,50.0,50.0

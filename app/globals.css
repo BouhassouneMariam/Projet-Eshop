@@ -209,7 +209,9 @@ img {
 .detail-visual,
 .option-card,
 .spec-card,
-.status-message {
+.status-message,
+.checkout-step,
+.info-panel {
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow);
@@ -265,7 +267,8 @@ img {
 .info-card p,
 .trust-card p,
 .metric-card p,
-.summary-note {
+.summary-note,
+.info-panel p {
   margin: 0;
   color: var(--text-soft);
   line-height: 1.65;
@@ -342,7 +345,8 @@ img {
 .product-grid,
 .category-grid,
 .trust-grid,
-.spec-grid {
+.spec-grid,
+.checkout-steps {
   display: grid;
   gap: 18px;
 }
@@ -360,14 +364,17 @@ img {
 .success-card,
 .empty-state,
 .catalog-toolbar,
-.option-card {
+.option-card,
+.checkout-step,
+.info-panel {
   border-radius: var(--radius-lg);
 }
 
 .metric-card,
 .info-card,
 .trust-card,
-.option-card {
+.option-card,
+.info-panel {
   padding: 18px;
 }
 
@@ -387,6 +394,75 @@ img {
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
+}
+
+.checkout-steps {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checkout-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+}
+
+.checkout-step-current {
+  color: white;
+  background: linear-gradient(135deg, var(--accent) 0%, #3f7b5e 100%);
+}
+
+.checkout-step-complete {
+  background: rgba(222, 241, 228, 0.8);
+}
+
+.step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  font-weight: 700;
+  color: var(--accent-strong);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.checkout-step-current .step-index {
+  color: var(--accent-strong);
+  background: white;
+}
+
+.step-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.step-label {
+  font-size: 1rem;
+}
+
+.step-description {
+  color: var(--text-faint);
+  font-size: 0.9rem;
+}
+
+.checkout-step-current .step-description {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.info-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-panel strong {
+  font-size: 1rem;
 }
 
 .product-grid {
@@ -772,7 +848,8 @@ img {
   .detail-layout,
   .cart-layout,
   .checkout-layout,
-  .hero-panel {
+  .hero-panel,
+  .checkout-steps {
     grid-template-columns: 1fr;
   }
 
